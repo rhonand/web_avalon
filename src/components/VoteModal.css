@@ -1,0 +1,95 @@
+.vote-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.vote-modal {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 20px;
+  background: rgba(18, 22, 32, 0.96);
+  color: white;
+  padding: 24px 22px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.34);
+}
+
+.vote-modal-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.vote-modal-subtitle {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.82);
+  margin-bottom: 20px;
+}
+
+.vote-modal-section {
+  margin-bottom: 22px;
+}
+
+.vote-modal-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.vote-modal-team-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.vote-modal-player-chip {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(123, 223, 242, 0.14);
+  border: 1px solid rgba(123, 223, 242, 0.48);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.vote-modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.vote-button {
+  flex: 1;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.vote-button:hover {
+  transform: translateY(-1px);
+}
+
+.vote-button.approve {
+  background: #ffd166;
+  color: #222;
+}
+
+.vote-button.reject {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.vote-modal-waiting {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 12px 14px;
+}

@@ -1,0 +1,8 @@
+.seat-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  width: 140px;
+  min-height: 520px;
+}

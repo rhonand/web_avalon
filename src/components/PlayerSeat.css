@@ -1,0 +1,133 @@
+.player-seat {
+  width: 180px;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border 0.15s ease;
+  box-sizing: border-box;
+}
+
+.player-seat.occupied {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.player-seat.empty {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+}
+
+.player-seat-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: white;
+  color: #222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.player-seat.empty .player-seat-circle {
+  background: white;
+  color: transparent;
+}
+
+.player-seat-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.player-seat-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+}
+
+.player-seat-subtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.player-seat.empty .player-seat-name {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.player-seat.empty .player-seat-subtitle {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.player-seat.clickable {
+  cursor: pointer;
+}
+
+.player-seat.clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.player-seat.selected {
+  border: 1px solid #ffd166;
+}
+
+.player-seat.leader {
+  box-shadow: 0 0 0 2px #7bdff2 inset;
+}
+
+.player-seat-main {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 20px 20px;
+  row-gap: 4px;
+  align-content: center;
+}
+
+.seat-meta-badge {
+  font-size: 14px;
+  font-weight: 600;
+
+  opacity: 0;
+  transform: translateX(10px);
+  transition:
+    opacity 2s ease,
+    transform 2s ease;
+}
+
+.seat-meta-badge.good {
+  color: #7dcfff;
+}
+
+.seat-meta-badge.evil {
+  color: #ff7b7b;
+}
+
+.seat-meta-badge.neutral {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.seat-meta-badge.revealed {
+  opacity: 1;
+  transform: translateX(0);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.18);
+}
+
+.player-seat-icons {
+  width: 28px;
+  min-height: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+}
+
+.seat-icon {
+  font-size: 14px;
+  line-height: 1;
+}

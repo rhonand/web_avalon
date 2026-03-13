@@ -1,0 +1,100 @@
+.quest-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.quest-modal {
+  width: 100%;
+  max-width: 440px;
+  border-radius: 20px;
+  background: rgba(18, 22, 32, 0.96);
+  color: white;
+  padding: 24px 22px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.34);
+}
+
+.quest-modal-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.quest-modal-subtitle {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.82);
+  margin-bottom: 20px;
+}
+
+.quest-modal-section {
+  margin-bottom: 22px;
+}
+
+.quest-modal-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.quest-modal-team-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quest-modal-player-chip {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 209, 102, 0.16);
+  border: 1px solid rgba(255, 209, 102, 0.42);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.quest-modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.quest-button {
+  flex: 1;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.quest-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.quest-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quest-button.success {
+  background: #ffd166;
+  color: #222;
+}
+
+.quest-button.fail {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.quest-modal-waiting {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 12px 14px;
+}

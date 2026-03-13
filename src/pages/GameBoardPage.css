@@ -1,0 +1,50 @@
+.game-board-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #23395d 0%, #111827 100%);
+  padding: 24px 32px 32px;
+  box-sizing: border-box;
+}
+
+.game-board-layout {
+  width: fit-content;
+  margin: 0 auto;
+  min-height: calc(100vh - 120px);
+  display: grid;
+  grid-template-columns: 180px 500px 180px;
+  align-items: center;
+  column-gap: 20px;
+}
+
+.player-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.center-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mission-box,
+.event-log-box {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 20px;
+  color: white;
+  min-height: 180px;
+}
+
+.history-button {
+  align-self: center;
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: none;
+  background: #1d4ed8;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}

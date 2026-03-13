@@ -1,0 +1,27 @@
+.game-room-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #23395d 0%, #111827 100%);
+  padding: 24px 32px 32px;
+  box-sizing: border-box;
+}
+
+.game-room-topbar {
+  width: fit-content;
+  margin: 0 auto 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.game-room-layout {
+  width: fit-content;
+  margin: 0 auto;
+  min-height: calc(100vh - 120px);
+  display: grid;
+  grid-template-columns: 180px 500px 180px;
+  align-items: center;
+  column-gap: 20px;
+}
