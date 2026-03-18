@@ -1,9 +1,108 @@
+import { useState, useEffect } from "react";
 
+import type { Page, Room, CreateRoomResponse, JoinRoomResponse } from "./types/networkTypes";
+import { socket } from "./socket/socket";
 import HomePage from "./pages/HomePage";
+import GameRoomPage from "./pages/GameRoomPage";
 
 function App() {
-  return <HomePage />;
-  //return <div>hello</div>;
+   const [page, setPage] = useState<Page>("home");
+   const [playerName, setPlayerName] = useState("");
+   const [joinRoomId, setJoinRoomId] = useState("");
+   const [room, setRoom] = useState<Room | null>(null);
+   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
+   const [error, setError] = useState("");
+
+   useEffect(() => {
+      console.log("connecting socket...");
+      socket.connect();
+  
+      socket.on("connect", () => {
+        console.log("socket connected:", socket.id);
+      });
+  
+      socket.on("connect_error", (err) => {
+        console.log("connect_error:", err.message);
+        setError(`Connect error: ${err.message}`);
+      });
+  
+      const onRoomUpdated = (updatedRoom: Room) => {
+        console.log("room updated:", updatedRoom);
+        setRoom(updatedRoom);
+      };
+  
+      socket.on("room:updated", onRoomUpdated);
+  
+      return () => {
+        socket.off("room:updated", onRoomUpdated);
+        socket.disconnect();
+      };
+    }, []);
+  
+    const handleCreate = () => {
+      console.log("Create clicked", { playerName, connected: socket.connected });
+      setError("");
+  
+      socket.emit("room:create", { playerName }, (res: CreateRoomResponse) => {
+        console.log("room:create ack:", res);
+  
+        if (!res.ok) {
+          setError(res.message);
+          return;
+        }
+  
+        setRoom(res.room);
+        setMyPlayerId(res.playerId);
+      });
+    };
+  
+    const handleJoin = () => {
+      console.log("Join clicked", { joinRoomId, playerName, connected: socket.connected });
+      setError("");
+  
+      socket.emit("room:join", { roomId: joinRoomId, playerName }, (res: JoinRoomResponse) => {
+        console.log("room:join ack:", res);
+  
+        if (!res.ok) {
+          setError(res.message);
+          return;
+        }
+  
+        setRoom(res.room);
+        setMyPlayerId(res.playerId);
+      });
+    };
+
+  
+  if (page === "home"){  
+    return (
+      <HomePage
+        playerName={playerName}
+        joinRoomId={joinRoomId}
+        room={room}
+        myPlayerId={myPlayerId}
+        error={error}
+        onPlayerNameChange={setPlayerName}
+        onJoinRoomIdChange={setJoinRoomId}
+        onCreateRoom={handleCreate}
+        onJoinRoom={handleJoin}
+      />
+    );
+  }
+
+  if (page === "room") {
+    return (
+      <GameRoomPage
+        room={room}
+        myPlayerId={myPlayerId}
+        onLeaveRoom={handleLeaveRoom}
+        onStartGame={handleStartGame}
+        onAddBot={handleAddBot}
+        onFillAllSeatsWithBots={handleFillAllSeatsWithBots}
+      />
+    );
+  }
+
 }
 
 export default App;
