@@ -8,7 +8,7 @@ import PlayerInfoModal from "../components/PlayerInfoModal";
 import type { Room } from "../types/gameTypes";
 
 type GameRoomPageProps = {
-  room: Room;
+  room: Room | null;
   myPlayerId: string;
   onLeaveRoom: (playerId: string) => void;
   onStartGame: () => void;
