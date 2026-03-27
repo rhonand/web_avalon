@@ -51,20 +51,11 @@ export function startGame(room: Room): Room {
   };
 }
 
-export function getRequiredTeamSize(playerCount: number, questRound: number): number {
+export function getRequiredTeamSize(_playerCount: number, questRound: number): number {
   const sizes = [3, 4, 4, 5, 5];
 
   return sizes[questRound - 1]??3;
 }
-
-const shuffle = <T,>(arr: T[]): T[] => {
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-};
 
 export function togglePlayerSelection(room: Room, playerId: string): Room {
   if (room.phase !== "discussion") return room;
@@ -333,18 +324,3 @@ export function fillAllSeatsWithBots(room: Room): Room {
   return nextRoom;
 }
 
-function getSeatNumberByPlayerId(room: Room, playerId: string): number | null {
-  const player = room.players.find((p) => p.id === playerId);
-  return player ? player.seatIndex : null;
-}
-
-function getPlayerDisplayName(
-  room: Room,
-  playerId: string,
-  myPlayerId: string
-): string {
-  if (playerId === myPlayerId) return "You";
-
-  const seat = getSeatNumberByPlayerId(room, playerId);
-  return seat !== null ? `${seat}` : "Unknown";
-}

@@ -1,0 +1,50 @@
+.lady-result-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.lady-result-modal {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 20px;
+  background: rgba(18, 22, 32, 0.97);
+  color: white;
+  padding: 24px 22px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.34);
+}
+
+.lady-result-modal-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.lady-result-modal-body {
+  font-size: 18px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.92);
+  margin-bottom: 22px;
+}
+
+.lady-result-close-button {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #ffd166;
+  color: #222;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.lady-result-close-button:hover {
+  transform: translateY(-1px);
+}

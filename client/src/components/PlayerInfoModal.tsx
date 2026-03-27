@@ -1,10 +1,13 @@
 import "./PlayerInfoModal.css";
 import type { Player } from "../types/gameTypes";
 import type { VisiblePlayerInfo } from "../engine/visibilityEngine";
+import type { NetworkPlayer } from "../types/networkTypes";
+
+type InspectablePlayer = Player | NetworkPlayer;
 
 type PlayerInfoModalProps = {
   isOpen: boolean;
-  player?: Player;
+  player?: InspectablePlayer;
   visibleInfo?: VisiblePlayerInfo | null;
   onClose: () => void;
 };

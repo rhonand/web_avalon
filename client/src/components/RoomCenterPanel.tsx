@@ -1,8 +1,8 @@
 import "./RoomCenterPanel.css";
-import type { Room } from "../types/gameTypes";
+import type { RoomView } from "../types/networkTypes";
 
 type RoomCenterPanelProps = {
-  room: Room;
+  room: RoomView;
   myPlayerId: string;
   amIHost: boolean;
   onLeaveRoom: () => void;
@@ -28,7 +28,7 @@ export default function RoomCenterPanel({
       <div className="room-card">
         <div className="room-header">
           <h2 className="room-title">Room</h2>
-          <div className="room-phase-badge">Waiting</div>
+          <div className="room-phase-badge">{room.status === "lobby" ? "Waiting" : "In Game"}</div>
         </div>
 
         <div className="room-info-grid">
@@ -58,9 +58,11 @@ export default function RoomCenterPanel({
         <div className="room-section">
           <div className="room-section-title">Room Status</div>
           <div className="room-body-text">
-            {amIHost
-              ? "You are the host. Wait for players to join, then start the game."
-              : "Waiting for the host to start the game."}
+            {room.status === "in_game"
+              ? "A game is currently finishing. You can wait here while other players return from the results screen."
+              : amIHost
+                ? "You are the host. Wait for players to join, then start the game."
+                : "Waiting for the host to start the game."}
           </div>
         </div>
 
@@ -69,7 +71,7 @@ export default function RoomCenterPanel({
             Leave Room
           </button>
 
-          {amIHost && (
+          {amIHost && room.status === "lobby" && (
             <>
               <button className="room-button primary" onClick={onStartGame}>
                 Start Game

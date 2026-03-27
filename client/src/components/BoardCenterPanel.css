@@ -252,6 +252,13 @@
 
 /* Success quest */
 .quest-circle.success {
+  background: #1f5fcc;
+  border: 1.5px solid #1f5fcc;
+  color: #ffffff;
+}
+
+/*
+.quest-circle.success {
   color: transparent;
   border: 1.5px solid rgba(255,255,255,0.18);
   background:
@@ -262,8 +269,16 @@
     inset 0 -4px 8px rgba(0,0,0,0.18),
     0 4px 10px rgba(0,0,0,0.28);
 }
+*/
 
 /* Failed quest */
+.quest-circle.fail {
+  background: #d84a4a;
+  border: 1.5px solid #d84a4a;
+  color: #ffffff;
+}
+
+/*
 .quest-circle.fail {
   color: transparent;
   border: 1.5px solid rgba(255,255,255,0.16);
@@ -275,7 +290,7 @@
     inset 0 -4px 8px rgba(0,0,0,0.20),
     0 4px 10px rgba(0,0,0,0.28);
 }
-
+*/
 
 /* Rejected proposal */
 .proposal-circle.rejected {

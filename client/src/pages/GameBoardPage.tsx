@@ -5,18 +5,22 @@ import BoardCenterPanel from "../components/BoardCenterPanel";
 import VoteModal from "../components/VoteModal";
 import MissionModal from "../components/QuestModal";
 import QuestResultModal from "../components/QuestResultModal";
+import LadyResultModal from "../components/LadyResultModal";
 import PlayerInfoModal from "../components/PlayerInfoModal";
 import { getVisiblePlayerInfo,getSeatMetaInfoForViewer } from "../engine/visibilityEngine";
-import type { Player, Room, GameEvent } from "../types/gameTypes";
+import type { Room, GameEvent } from "../types/gameTypes";
 
 
 type GameBoardPageProps = {
   room: Room;
   myPlayerId: string;
+  error?: string;
   requiredTeamSize: number;
   onSeatClick: (playerId: string) => void;
   onStartBuildingTeam: () => void;
   onConfirmTeam: () => void;
+  onConfirmLadyTest: () => void;
+  onConfirmAssassination: () => void;
   onSubmitVote: (vote: "approve" | "reject") => void;
   onSubmitMissionAction: (action: "success" | "fail") => void;
   onDismissQuestResult: () => void;
@@ -27,14 +31,20 @@ type GameBoardPageProps = {
 export default function GameBoardPage({
   room,
   myPlayerId,
+  error,
   requiredTeamSize,
   onSeatClick,
   onStartBuildingTeam,
   onConfirmTeam,
+  onConfirmLadyTest,
+  onConfirmAssassination,
   onSubmitVote,
   onSubmitMissionAction,
   onDismissQuestResult,
 }: GameBoardPageProps) {
+  const privateInfoTimerRef = useRef<number | null>(null);
+  const leaderRevealTimerRef = useRef<number | null>(null);
+  const ladyRevealTimerRef = useRef<number | null>(null);
   const leader = room.players[room.leaderIndex];
   const leaderPlayerId = leader?.id;
   const myVote = room.votes[myPlayerId];
@@ -45,6 +55,7 @@ export default function GameBoardPage({
 
   const [privateInfoRevealed, setPrivateInfoRevealed] = useState(false);
   const [leaderBadgeRevealed, setLeaderBadgeRevealed] = useState(false);
+  const [ladyBadgeRevealed, setLadyBadgeRevealed] = useState(false);
   const [localEvents, setLocalEvents] = useState<{ id: number; text: string }[]>([]);
 
   const currentQuestIndex = room.questRound - 1;
@@ -88,6 +99,8 @@ export default function GameBoardPage({
     room.questDetails.length > 0
       ? room.questDetails[room.questDetails.length - 1]
       : undefined;
+  const [dismissedQuestResultRound, setDismissedQuestResultRound] = useState<number | null>(null);
+  const [dismissedLadyResultId, setDismissedLadyResultId] = useState<number | null>(null);
 
   const [inspectedPlayerId, setInspectedPlayerId] = useState<string | null>(null);
 
@@ -102,26 +115,80 @@ export default function GameBoardPage({
       ? getVisiblePlayerInfo(viewer, inspectedPlayer, room)
       : null;
 
-  const displayEvents = room.eventLog.map((event) => ({
-    id: event.id,
-    text: formatEvent(event, room),
-  }));
+  const displayEvents = room.eventLog
+    .filter((event) => {
+      if (event.type === "leader_assigned") {
+        return leaderBadgeRevealed;
+      }
+
+      if (
+        event.type === "lady_assigned_public" ||
+        event.type === "lady_assigned_private_self"
+      ) {
+        return ladyBadgeRevealed;
+      }
+
+      return true;
+    })
+    .map((event) => ({
+      id: event.id,
+      text: formatEvent(event, room),
+    }));
 
   const allDisplayEvents = [...localEvents, ...displayEvents];
 
   const prevPhaseRef = useRef(room.phase);
 
   useEffect(() => {
+    return () => {
+      if (privateInfoTimerRef.current !== null) {
+        window.clearTimeout(privateInfoTimerRef.current);
+      }
+      if (leaderRevealTimerRef.current !== null) {
+        window.clearTimeout(leaderRevealTimerRef.current);
+      }
+      if (ladyRevealTimerRef.current !== null) {
+        window.clearTimeout(ladyRevealTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const prevPhase = prevPhaseRef.current;
 
     if (room.phase === "initializing") {
+      if (privateInfoTimerRef.current !== null) {
+        window.clearTimeout(privateInfoTimerRef.current);
+        privateInfoTimerRef.current = null;
+      }
+      if (leaderRevealTimerRef.current !== null) {
+        window.clearTimeout(leaderRevealTimerRef.current);
+        leaderRevealTimerRef.current = null;
+      }
+      if (ladyRevealTimerRef.current !== null) {
+        window.clearTimeout(ladyRevealTimerRef.current);
+        ladyRevealTimerRef.current = null;
+      }
+
       setPrivateInfoRevealed(false);
       setLeaderBadgeRevealed(false);
+      setLadyBadgeRevealed(false);
       setLocalEvents([]);
     }
 
-    if (prevPhase === "initializing" && room.phase === "discussion") {
-      const timer = setTimeout(() => {
+    const enteredDiscussionFromInitializing =
+      prevPhase === "initializing" && room.phase === "discussion";
+    const needsRevealTimers =
+      room.phase === "discussion" &&
+      (!privateInfoRevealed || !leaderBadgeRevealed || !ladyBadgeRevealed);
+
+    if (
+      (enteredDiscussionFromInitializing || needsRevealTimers) &&
+      privateInfoTimerRef.current === null &&
+      leaderRevealTimerRef.current === null &&
+      ladyRevealTimerRef.current === null
+    ) {
+      privateInfoTimerRef.current = window.setTimeout(() => {
         setPrivateInfoRevealed(true);
 
         const me = room.players.find((player) => player.id === myPlayerId);
@@ -132,23 +199,42 @@ export default function GameBoardPage({
               text: `You are ${me.role} for this game.`,
             },
           ]);
-       }
-     }, 100);
+        }
+        privateInfoTimerRef.current = null;
+      }, 100);
 
-      const leaderTimer = setTimeout(() => {
+      leaderRevealTimerRef.current = window.setTimeout(() => {
         setLeaderBadgeRevealed(true);
-      }, 800);
+        leaderRevealTimerRef.current = null;
+      }, 2000);
 
-      prevPhaseRef.current = room.phase;
-
-      return () => {
-        clearTimeout(timer);
-        clearTimeout(leaderTimer);
-      };
+      ladyRevealTimerRef.current = window.setTimeout(() => {
+        setLadyBadgeRevealed(true);
+        ladyRevealTimerRef.current = null;
+      }, 2000);
     }
 
     prevPhaseRef.current = room.phase;
-  }, [room.phase, room.players, myPlayerId]);
+  }, [
+    room.phase,
+    room.players,
+    myPlayerId,
+    privateInfoRevealed,
+    leaderBadgeRevealed,
+    ladyBadgeRevealed,
+  ]);
+
+  useEffect(() => {
+    if (room.phase !== "questResult") {
+      setDismissedQuestResultRound(null);
+    }
+  }, [room.phase]);
+
+  useEffect(() => {
+    if (room.phase !== "lady" || room.ladyStage !== "result") {
+      setDismissedLadyResultId(null);
+    }
+  }, [room.phase, room.ladyStage]);
 
   function getSeatMetaInfo(playerId: string) {
     if (!viewer) return null;
@@ -158,7 +244,7 @@ export default function GameBoardPage({
 
     //if (room.phase === "initializing") return null;
 
-    return getSeatMetaInfoForViewer(viewer, target);
+    return getSeatMetaInfoForViewer(viewer, target, room);
   }
 
   function handleSeatInteraction(playerId: string) {
@@ -170,9 +256,18 @@ export default function GameBoardPage({
       room.proposalStage === "teamBuilding" &&
       amILeader;
 
+    const amILady =
+      room.phase === "lady" &&
+      room.ladyStage === "selecting" &&
+      room.ladyPlayerId === myPlayerId;
+
+    const amIAssassin =
+      room.phase === "assassinate" &&
+      room.assassinPlayerId === myPlayerId;
+
  
 
-    if (isLeaderBuildingTeam) {
+    if (isLeaderBuildingTeam || amILady || amIAssassin) {
       console.log("toggle team member");
       onSeatClick(playerId);
       return;
@@ -188,6 +283,36 @@ export default function GameBoardPage({
     switch (event.type) {
       case "leader_assigned": {
         return `Player ${event.leaderIndex + 1} is now the leader.`;
+      }
+
+      case "lady_tested_public": {
+        const actor = room.players.find((candidate) => candidate.id === event.actorPlayerId);
+        const target = room.players.find((candidate) => candidate.id === event.targetPlayerId);
+        const actorSeat = actor ? actor.seatIndex + 1 : "?";
+        const targetSeat = target ? target.seatIndex + 1 : "?";
+        return `Player ${actorSeat} tested the loyalty of Player ${targetSeat}.`;
+      }
+
+      case "lady_tested_private_lady": {
+        const target = room.players.find((candidate) => candidate.id === event.targetPlayerId);
+        const targetSeat = target ? target.seatIndex + 1 : "?";
+        return `You tested the loyalty of Player ${targetSeat}, they are on the ${event.revealedTeam} side.`;
+      }
+
+      case "lady_tested_private_target": {
+        const actor = room.players.find((candidate) => candidate.id === event.actorPlayerId);
+        const actorSeat = actor ? actor.seatIndex + 1 : "?";
+        return `Player ${actorSeat} tested your loyalty, they know you are on the ${event.revealedTeam} side.`;
+      }
+
+      case "lady_assigned_public": {
+        const player = room.players.find((candidate) => candidate.id === event.playerId);
+        const seatLabel = player ? player.seatIndex + 1 : "?";
+        return `Player ${seatLabel} is now Lady of the Lake.`;
+      }
+
+      case "lady_assigned_private_self": {
+        return "You are now the Lady of the Lake.";
       }
 
       case "team_selected": {
@@ -216,63 +341,39 @@ export default function GameBoardPage({
         return "Assassination phase has begun.";
       }
 
+      case "assassination_resolved": {
+        const assassin = room.players.find((candidate) => candidate.id === event.assassinPlayerId);
+        const target = room.players.find((candidate) => candidate.id === event.targetPlayerId);
+        const assassinSeat = assassin ? assassin.seatIndex + 1 : "?";
+        const targetSeat = target ? target.seatIndex + 1 : "?";
+        return event.success
+          ? `Player ${assassinSeat} assassinated Player ${targetSeat}. Evil wins.`
+          : `Player ${assassinSeat} failed to assassinate Merlin by choosing Player ${targetSeat}. Good wins.`;
+      }
+
       default:
         return "Unknown event.";
     }
   }
 
+  const highlightedPlayerIds =
+    room.phase === "lady" && room.ladyStage === "selecting" && room.ladyTargetPlayerId
+      ? [room.ladyTargetPlayerId]
+      : room.phase === "assassinate" && room.assassinationTargetPlayerId
+        ? [room.assassinationTargetPlayerId]
+      : selectedTeamPlayerIds;
+
   
-
-
-
-  function addPlayerToNextAvailableSeat(room: Room, player: Omit<Player, "seatIndex">): Room {
-      const occupied = new Set(room.players.map((p) => p.seatIndex));
-      const nextSeat = Array.from({ length: 10 }, (_, i) => i).find((i) => !occupied.has(i));
-  
-      if (nextSeat === undefined) return room;
-  
-      return {
-        ...room,
-        players: [
-          ...room.players,
-          {
-            ...player,
-            seatIndex: nextSeat,
-          },
-        ],
-      };
-    }
-
-  function handleAddBot(room: Room): Room {
-    const botNumber = room.players.filter((p) => p.type === "bot").length + 1;
-
-    return addPlayerToNextAvailableSeat(room, {
-      id: `bot-${botNumber}`,
-      name: `Bot ${botNumber}`,
-      type: "bot",
-      isHost: false,
-    });
-  }
-
-  function handleAddNineBots(room: Room): Room {
-    let nextRoom = room;
-    const remaining = 10 - room.players.length;
-
-    for (let i = 0; i < remaining; i++) {
-      nextRoom = handleAddBot(nextRoom);
-    }
-
-    return nextRoom;
-  }
-
-
   return (
     <div className="game-board-page">
+      {error ? <p style={{ margin: "12px 24px 0" }}>{error}</p> : null}
       <div className="game-board-layout">
         <SeatColumn
           seatIndices={[0, 1, 2, 3, 4]}
           room={room}
-          selectedTeamPlayerIds={selectedTeamPlayerIds}
+          myPlayerId={myPlayerId}
+          ladyPlayerId={ladyBadgeRevealed ? room.ladyPlayerId : null}
+          selectedTeamPlayerIds={highlightedPlayerIds}
           leaderPlayerId={leaderPlayerId}
           onSeatClick={handleSeatInteraction}
           privateInfoRevealed={privateInfoRevealed}
@@ -283,6 +384,7 @@ export default function GameBoardPage({
         <BoardCenterPanel
           room={room}
           myPlayerId={myPlayerId}
+          leaderInfoRevealed={leaderBadgeRevealed}
           requiredTeamSize={requiredTeamSize}
           questStatuses={[...questStatuses]}
           proposalStatuses={[...proposalStatuses]}
@@ -290,12 +392,16 @@ export default function GameBoardPage({
           selectedTeamPlayerIds={selectedTeamPlayerIds}
           onStartBuildingTeam={onStartBuildingTeam}
           onConfirmTeam={onConfirmTeam}
+          onConfirmLadyTest={onConfirmLadyTest}
+          onConfirmAssassination={onConfirmAssassination}
         />
 
         <SeatColumn
           seatIndices={[5, 6, 7, 8, 9]}
           room={room}
-          selectedTeamPlayerIds={selectedTeamPlayerIds}
+          myPlayerId={myPlayerId}
+          ladyPlayerId={ladyBadgeRevealed ? room.ladyPlayerId : null}
+          selectedTeamPlayerIds={highlightedPlayerIds}
           leaderPlayerId={leaderPlayerId}
           onSeatClick={handleSeatInteraction}
           privateInfoRevealed={privateInfoRevealed}
@@ -323,12 +429,36 @@ export default function GameBoardPage({
       />
 
       <QuestResultModal
-        isOpen={room.phase === "questResult" && !!latestQuestResult}
+        isOpen={
+          room.phase === "questResult" &&
+          !!latestQuestResult &&
+          dismissedQuestResultRound !== latestQuestResult.questRound
+        }
         questNumber={latestQuestResult?.questRound ?? room.questRound}
         passed={latestQuestResult?.passed ?? false}
         successCount={latestQuestResult?.successCount ?? 0}
         failCount={latestQuestResult?.failCount ?? 0}
-        onClose={onDismissQuestResult}
+        onClose={() => {
+          if (latestQuestResult) {
+            setDismissedQuestResultRound(latestQuestResult.questRound);
+          }
+          onDismissQuestResult();
+        }}
+      />
+
+      <LadyResultModal
+        isOpen={
+          room.phase === "lady" &&
+          room.ladyStage === "result" &&
+          !!room.ladyResult &&
+          dismissedLadyResultId !== room.ladyResult.id
+        }
+        resultText={room.ladyResult?.text ?? ""}
+        onClose={() => {
+          if (room.ladyResult) {
+            setDismissedLadyResultId(room.ladyResult.id);
+          }
+        }}
       />
 
       <PlayerInfoModal

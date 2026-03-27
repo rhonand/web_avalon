@@ -1,138 +1,19 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
-import type { Page, Room, CreateRoomResponse, JoinRoomResponse } from "./types/networkTypes";
+import { getRequiredTeamSize } from "./engine/gameEngine";
+import type {
+  AddBotResponse,
+  CreateRoomResponse,
+  FillSeatsWithBotsResponse,
+  GameActionResponse,
+  GameStateView,
+  JoinRoomResponse,
+  LeaveRoomResponse,
+  Page,
+  RoomView,
+  StartGameResponse,
+} from "./types/networkTypes";
 import { socket } from "./socket/socket";
-import HomePage from "./pages/HomePage";
-import GameRoomPage from "./pages/GameRoomPage";
-
-function App() {
-   const [page, setPage] = useState<Page>("home");
-   const [playerName, setPlayerName] = useState("");
-   const [joinRoomId, setJoinRoomId] = useState("");
-   const [room, setRoom] = useState<Room | null>(null);
-   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
-   const [error, setError] = useState("");
-
-   useEffect(() => {
-      console.log("connecting socket...");
-      socket.connect();
-  
-      socket.on("connect", () => {
-        console.log("socket connected:", socket.id);
-      });
-  
-      socket.on("connect_error", (err) => {
-        console.log("connect_error:", err.message);
-        setError(`Connect error: ${err.message}`);
-      });
-  
-      const onRoomUpdated = (updatedRoom: Room) => {
-        console.log("room updated:", updatedRoom);
-        setRoom(updatedRoom);
-      };
-  
-      socket.on("room:updated", onRoomUpdated);
-  
-      return () => {
-        socket.off("room:updated", onRoomUpdated);
-        socket.disconnect();
-      };
-    }, []);
-  
-    const handleCreate = () => {
-      console.log("Create clicked", { playerName, connected: socket.connected });
-      setError("");
-  
-      socket.emit("room:create", { playerName }, (res: CreateRoomResponse) => {
-        console.log("room:create ack:", res);
-  
-        if (!res.ok) {
-          setError(res.message);
-          return;
-        }
-  
-        setRoom(res.room);
-        setMyPlayerId(res.playerId);
-      });
-    };
-  
-    const handleJoin = () => {
-      console.log("Join clicked", { joinRoomId, playerName, connected: socket.connected });
-      setError("");
-  
-      socket.emit("room:join", { roomId: joinRoomId, playerName }, (res: JoinRoomResponse) => {
-        console.log("room:join ack:", res);
-  
-        if (!res.ok) {
-          setError(res.message);
-          return;
-        }
-  
-        setRoom(res.room);
-        setMyPlayerId(res.playerId);
-      });
-    };
-
-  
-  if (page === "home"){  
-    return (
-      <HomePage
-        playerName={playerName}
-        joinRoomId={joinRoomId}
-        room={room}
-        myPlayerId={myPlayerId}
-        error={error}
-        onPlayerNameChange={setPlayerName}
-        onJoinRoomIdChange={setJoinRoomId}
-        onCreateRoom={handleCreate}
-        onJoinRoom={handleJoin}
-      />
-    );
-  }
-
-  if (page === "room") {
-    return (
-      <GameRoomPage
-        room={room}
-        myPlayerId={myPlayerId}
-        onLeaveRoom={handleLeaveRoom}
-        onStartGame={handleStartGame}
-        onAddBot={handleAddBot}
-        onFillAllSeatsWithBots={handleFillAllSeatsWithBots}
-      />
-    );
-  }
-
-}
-
-export default App;
-
-
-
-
-/*
-
-// Legacy Local Game
-
-
-import { useState } from "react";
-import type { Page, VoteChoice, QuestAction, Room } from "./types/gameTypes";
-import { createInitialRoom } from "./data/mockRoom";
-import {
-  leaveRoom,
-  startGame,
-  togglePlayerSelection,
-  startBuildingTeam,
-  confirmTeamSelection,
-  submitVote,
-  submitQuestAction,
-  getRequiredTeamSize,
-  advanceAfterQuestResult,
-  addBot,
-  fillAllSeatsWithBots
-} from "./engine/gameEngine";
-import { useGameAutomation } from "./engine/useGameAutomation";
-
 import HomePage from "./pages/HomePage";
 import GameRoomPage from "./pages/GameRoomPage";
 import GameBoardPage from "./pages/GameBoardPage";
@@ -140,85 +21,379 @@ import GameOverPage from "./pages/GameOverPage";
 
 function App() {
   const [page, setPage] = useState<Page>("home");
-  const [room, setRoom] = useState<Room>(() => createInitialRoom());
+  const [playerName, setPlayerName] = useState("");
+  const [joinRoomId, setJoinRoomId] = useState("");
+  const [room, setRoom] = useState<RoomView | null>(null);
+  const [game, setGame] = useState<GameStateView | null>(null);
+  const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
-  const myPlayerId = "me";
+  useEffect(() => {
+    socket.connect();
 
-  useGameAutomation(room, setRoom, myPlayerId);
+    const onConnectError = (err: Error) => {
+      setError(`Connect error: ${err.message}`);
+    };
 
-  function handleLeaveRoom(playerId: string) {
-    setRoom((prev) => leaveRoom(prev, playerId));
+    const onRoomUpdated = (updatedRoom: RoomView) => {
+      setRoom(updatedRoom);
+    };
 
-    if (playerId === myPlayerId) {
-      setPage("home");
+    const onGameUpdated = (updatedGame: GameStateView) => {
+      setGame(updatedGame);
+    };
+
+    const onGameDestroyed = ({ roomId }: { roomId: string }) => {
+      setGame((currentGame) => {
+        if (!currentGame || currentGame.roomId !== roomId) {
+          return currentGame;
+        }
+
+        return null;
+      });
+    };
+
+    socket.on("connect_error", onConnectError);
+    socket.on("room:updated", onRoomUpdated);
+    socket.on("game:updated", onGameUpdated);
+    socket.on("game:destroyed", onGameDestroyed);
+
+    return () => {
+      socket.off("connect_error", onConnectError);
+      socket.off("room:updated", onRoomUpdated);
+      socket.off("game:updated", onGameUpdated);
+      socket.off("game:destroyed", onGameDestroyed);
+      socket.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (game) {
+      setPage("game");
+      return;
     }
-  }
 
-  function handleStartGame() {
-    setRoom((prev) => startGame(prev));
-    setPage("game");
-  }
+    if (room) {
+      setPage("room");
+      return;
+    }
 
-  function handleToggleTeamMember(playerId: string) {
-    console.log("App handleSeatClick -> togglePlayerSelection", playerId);
-    setRoom((prev) => togglePlayerSelection(prev, playerId));
-  }
+    setPage("home");
+  }, [game, room]);
 
-  function handleStartBuildingTeam() {
-    setRoom((prev) => startBuildingTeam(prev));
-  }
+  const handleCreate = () => {
+    setError("");
 
-  function handleConfirmTeam() {
-    setRoom((prev) => confirmTeamSelection(prev));
-  }
+    socket.emit("room:create", { playerName }, (res: CreateRoomResponse) => {
+      if (!res.ok) {
+        setError(res.message);
+        return;
+      }
 
-  function handleSubmitVote(vote: VoteChoice) {
-    setRoom((prev) => submitVote(prev, myPlayerId, vote));
-  }
+      setRoom(res.room);
+      setMyPlayerId(res.playerId);
+      setJoinRoomId(res.room.code);
+    });
+  };
 
-  function handleSubmitQuestAction(action: QuestAction) {
-    setRoom((prev) => submitQuestAction(prev, myPlayerId, action));
-  }
+  const handleJoin = () => {
+    setError("");
 
-  function handleDismissQuestResult() {
-    setRoom((prev) => advanceAfterQuestResult(prev));
-  }
+    socket.emit("room:join", { roomId: joinRoomId, playerName }, (res: JoinRoomResponse) => {
+      if (!res.ok) {
+        setError(res.message);
+        return;
+      }
 
+      setRoom(res.room);
+      setMyPlayerId(res.playerId);
+      setJoinRoomId(res.room.code);
+    });
+  };
 
-  function handleAddBot() {
-    setRoom((prev) => addBot(prev));
-  }
+  const handleLeaveRoom = () => {
+    if (!room) {
+      setRoom(null);
+      setGame(null);
+      setError("");
+      return;
+    }
 
+    setError("");
+    socket.emit("room:leave", { roomId: room.code }, (res: LeaveRoomResponse) => {
+      if (!res.ok) {
+        setError(res.message);
+        return;
+      }
 
-  function handleFillAllSeatsWithBots() {
-    setRoom((prev) => fillAllSeatsWithBots(prev));
-  }
+      setRoom(null);
+      setGame(null);
+      setMyPlayerId(null);
+      setJoinRoomId("");
+      setError("");
+    });
+  };
 
-  const requiredTeamSize = getRequiredTeamSize(
-    room.players.length,
-    room.questRound
-  );
+  const handleStartGame = () => {
+    if (!room) {
+      setError("Room not found.");
+      return;
+    }
 
-  if (page === "home") {
+    setError("");
+
+    socket.emit("game:start", { roomId: room.code }, (res: StartGameResponse) => {
+      if (!res.ok) {
+        setError(res.message);
+        return;
+      }
+
+      setRoom(res.room);
+      setGame(res.game);
+    });
+  };
+
+  const handleAddBot = () => {
+    if (!room) {
+      setError("Room not found.");
+      return;
+    }
+
+    setError("");
+    socket.emit("room:add_bot", { roomId: room.code }, (res: AddBotResponse) => {
+      if (!res.ok) {
+        setError(res.message);
+        return;
+      }
+
+      setRoom(res.room);
+    });
+  };
+
+  const handleFillAllSeatsWithBots = () => {
+    if (!room) {
+      setError("Room not found.");
+      return;
+    }
+
+    setError("");
+    socket.emit("room:fill_bots", { roomId: room.code }, (res: FillSeatsWithBotsResponse) => {
+      if (!res.ok) {
+        setError(res.message);
+        return;
+      }
+
+      setRoom(res.room);
+    });
+  };
+
+  const handleBoardSeatClick = (playerId: string) => {
+    setGame((prev) => {
+      if (!prev || !myPlayerId) {
+        return prev;
+      }
+
+      if (
+        prev.phase === "lady" &&
+        prev.ladyStage === "selecting" &&
+        prev.ladyPlayerId === myPlayerId
+      ) {
+        if (playerId === myPlayerId) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          ladyTargetPlayerId:
+            prev.ladyTargetPlayerId === playerId ? null : playerId,
+        };
+      }
+
+      if (prev.phase === "assassinate" && prev.assassinPlayerId === myPlayerId) {
+        const target = prev.players.find((player) => player.id === playerId);
+        if (!target || target.team === "evil" || playerId === myPlayerId) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          assassinationTargetPlayerId:
+            prev.assassinationTargetPlayerId === playerId ? null : playerId,
+        };
+      }
+
+      const leader = prev.players[prev.leaderIndex];
+      const amILeader = leader?.id === myPlayerId;
+      if (
+        prev.phase !== "discussion" ||
+        prev.proposalStage !== "teamBuilding" ||
+        !amILeader
+      ) {
+        return prev;
+      }
+
+      const requiredTeamSize = getRequiredTeamSize(prev.players.length, prev.questRound);
+      const alreadySelected = prev.selectedTeamPlayerIds.includes(playerId);
+
+      let nextSelected: string[];
+
+      if (alreadySelected) {
+        nextSelected = prev.selectedTeamPlayerIds.filter((id) => id !== playerId);
+      } else {
+        if (prev.selectedTeamPlayerIds.length >= requiredTeamSize) {
+          return prev;
+        }
+
+        nextSelected = [...prev.selectedTeamPlayerIds, playerId];
+      }
+
+      return {
+        ...prev,
+        selectedTeamPlayerIds: nextSelected,
+      };
+    });
+  };
+
+  const handleStartBuildingTeam = () => {
+    if (!game) {
+      setError("Game not found.");
+      return;
+    }
+
+    setError("");
+    socket.emit("game:start_team_building", { roomId: game.code }, (res: GameActionResponse) => {
+      if (!res.ok) {
+        setError(res.message);
+      }
+    });
+  };
+
+  const handleConfirmTeam = () => {
+    if (!game) {
+      setError("Game not found.");
+      return;
+    }
+
+    setError("");
+    socket.emit(
+      "game:propose_team",
+      { roomId: game.code, teamPlayerIds: game.selectedTeamPlayerIds },
+      (res: GameActionResponse) => {
+        if (!res.ok) {
+          setError(res.message);
+        }
+      }
+    );
+  };
+
+  const handleSubmitVote = (vote: "approve" | "reject") => {
+    if (!game) {
+      setError("Game not found.");
+      return;
+    }
+
+    setError("");
+    socket.emit("game:vote", { roomId: game.code, vote }, (res: GameActionResponse) => {
+      if (!res.ok) {
+        setError(res.message);
+      }
+    });
+  };
+
+  const handleSubmitMissionAction = (action: "success" | "fail") => {
+    if (!game) {
+      setError("Game not found.");
+      return;
+    }
+
+    setError("");
+    socket.emit("game:quest_action", { roomId: game.code, action }, (res: GameActionResponse) => {
+      if (!res.ok) {
+        setError(res.message);
+      }
+    });
+  };
+
+  const handleConfirmLadyTest = () => {
+    if (!game || !game.ladyTargetPlayerId) {
+      setError("No target selected.");
+      return;
+    }
+
+    setError("");
+    socket.emit(
+      "game:lady_test",
+      { roomId: game.code, targetPlayerId: game.ladyTargetPlayerId },
+      (res: GameActionResponse) => {
+        if (!res.ok) {
+          setError(res.message);
+        }
+      }
+    );
+  };
+
+  const handleConfirmAssassination = () => {
+    if (!game || !game.assassinationTargetPlayerId) {
+      setError("No target selected.");
+      return;
+    }
+
+    setError("");
+    socket.emit(
+      "game:assassinate",
+      { roomId: game.code, targetPlayerId: game.assassinationTargetPlayerId },
+      (res: GameActionResponse) => {
+        if (!res.ok) {
+          setError(res.message);
+        }
+      }
+    );
+  };
+
+  const handleDismissQuestResult = () => {
+    setError("");
+  };
+
+  const handleReturnToRoom = () => {
+    setError("");
+    setGame(null);
+  };
+
+  if (game?.phase === "gameOver" && myPlayerId) {
     return (
-      <HomePage
-        onCreateRoom={() => {
-          setRoom(createInitialRoom());
-          setPage("room");
-        }}
-        onJoinRoom={() => {
-          setRoom(createInitialRoom());
-          setPage("room");
-        }}
+      <GameOverPage
+        room={game}
+        error={error}
+        onReturnToRoom={handleReturnToRoom}
       />
     );
   }
 
-  if (page === "room") {
+  if (page === "game" && game && myPlayerId) {
+    return (
+      <GameBoardPage
+        room={game}
+        myPlayerId={myPlayerId}
+        error={error}
+        requiredTeamSize={getRequiredTeamSize(game.players.length, game.questRound)}
+        onSeatClick={handleBoardSeatClick}
+        onStartBuildingTeam={handleStartBuildingTeam}
+        onConfirmTeam={handleConfirmTeam}
+        onConfirmLadyTest={handleConfirmLadyTest}
+        onConfirmAssassination={handleConfirmAssassination}
+        onSubmitVote={handleSubmitVote}
+        onSubmitMissionAction={handleSubmitMissionAction}
+        onDismissQuestResult={handleDismissQuestResult}
+      />
+    );
+  }
+
+  if (page === "room" && room && myPlayerId) {
     return (
       <GameRoomPage
         room={room}
         myPlayerId={myPlayerId}
+        error={error}
         onLeaveRoom={handleLeaveRoom}
         onStartGame={handleStartGame}
         onAddBot={handleAddBot}
@@ -227,33 +402,19 @@ function App() {
     );
   }
 
-  if (room.phase === "gameOver") {
-    return (
-      <GameOverPage
-        room={room}
-        onRestart={() => {
-          setRoom(createInitialRoom());
-          setPage("home");
-        }}
-      />
-    );
-  }
-
   return (
-    <GameBoardPage
+    <HomePage
+      playerName={playerName}
+      joinRoomId={joinRoomId}
       room={room}
       myPlayerId={myPlayerId}
-      requiredTeamSize={requiredTeamSize}
-      onSeatClick={handleToggleTeamMember}
-      onStartBuildingTeam={handleStartBuildingTeam}
-      onConfirmTeam={handleConfirmTeam}
-      onSubmitVote={handleSubmitVote}
-      onSubmitMissionAction={handleSubmitQuestAction}
-      onDismissQuestResult={handleDismissQuestResult}
+      error={error}
+      onPlayerNameChange={setPlayerName}
+      onJoinRoomIdChange={setJoinRoomId}
+      onCreateRoom={handleCreate}
+      onJoinRoom={handleJoin}
     />
   );
 }
 
 export default App;
-
-*/

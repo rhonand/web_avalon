@@ -1,4 +1,4 @@
-import { useEffect, useRef, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useRef, type Dispatch } from "react";
 import type { Room, VoteChoice, QuestAction, GameEvent } from "../types/gameTypes";
 import {
   getRequiredTeamSize,

@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 type FloatingPanelProps = {
   title: string;
   isOpen: boolean;
@@ -5,5 +7,36 @@ type FloatingPanelProps = {
   onMinimize: () => void;
   onRestore: () => void;
   onClose?: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 };
+
+export default function FloatingPanel({
+  title,
+  isOpen,
+  isMinimized,
+  onMinimize,
+  onRestore,
+  onClose,
+  children,
+}: FloatingPanelProps) {
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <section aria-label={title}>
+      <div>
+        <strong>{title}</strong>
+      </div>
+      <div>{children}</div>
+      <div>
+        {isMinimized ? (
+          <button onClick={onRestore}>Restore</button>
+        ) : (
+          <button onClick={onMinimize}>Minimize</button>
+        )}
+        {onClose ? <button onClick={onClose}>Close</button> : null}
+      </div>
+    </section>
+  );
+}

@@ -1,5 +1,5 @@
 import type { Player, RoleCardID, RoleCard } from "../types/gameTypes";
-import { ROLE_CARD_IDS, ROLE_CARD_DEFS } from "../types/gameTypes";
+import { ROLE_CARD_IDS, ROLE_CARD_DEFS } from "../../../shared/types/roleCards";
 
 export function assembleRoleDeck(playerCount: number): RoleCardID[] {
   switch (playerCount) {

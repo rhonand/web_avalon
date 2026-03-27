@@ -5,12 +5,13 @@ import SeatColumn from "../components/SeatColumn";
 import RoomCenterPanel from "../components/RoomCenterPanel";
 import PlayerInfoModal from "../components/PlayerInfoModal";
 
-import type { Room } from "../types/gameTypes";
+import type { RoomView } from "../types/networkTypes";
 
 type GameRoomPageProps = {
-  room: Room | null;
+  room: RoomView;
   myPlayerId: string;
-  onLeaveRoom: (playerId: string) => void;
+  error: string;
+  onLeaveRoom: () => void;
   onStartGame: () => void;
   onAddBot: () => void;
   onFillAllSeatsWithBots: () => void;
@@ -19,6 +20,7 @@ type GameRoomPageProps = {
 export default function GameRoomPage({
   room,
   myPlayerId,
+  error,
   onLeaveRoom,
   onStartGame,
   onAddBot,
@@ -46,12 +48,16 @@ export default function GameRoomPage({
         </div>
       </div>
 
+      {error ? <p style={{ margin: "0 24px" }}>{error}</p> : null}
+
       <div className="game-room-layout">
         <SeatColumn
           seatIndices={[0, 1, 2, 3, 4]}
           room={room}
+          myPlayerId={myPlayerId}
           selectedTeamPlayerIds={[]}
-          leaderPlayerId={undefined}
+          privateInfoRevealed={false}
+          leaderBadgeRevealed={false}
           onSeatClick={handleSeatClick}
         />
 
@@ -59,7 +65,7 @@ export default function GameRoomPage({
           room={room}
           myPlayerId={myPlayerId}
           amIHost={amIHost}
-          onLeaveRoom={() => onLeaveRoom(myPlayerId)}
+          onLeaveRoom={onLeaveRoom}
           onStartGame={onStartGame}
           onAddBot={onAddBot}
           onFillAllSeatsWithBots={onFillAllSeatsWithBots}
@@ -68,8 +74,10 @@ export default function GameRoomPage({
         <SeatColumn
           seatIndices={[5, 6, 7, 8, 9]}
           room={room}
+          myPlayerId={myPlayerId}
           selectedTeamPlayerIds={[]}
-          leaderPlayerId={undefined}
+          privateInfoRevealed={false}
+          leaderBadgeRevealed={false}
           onSeatClick={handleSeatClick}
         />
       </div>

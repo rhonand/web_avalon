@@ -1,17 +1,24 @@
 import "./PlayerSeat.css";
+import type { ReactNode } from "react";
 import type { Player, SeatMetaInfo } from "../types/gameTypes";
+import type { NetworkPlayer } from "../types/networkTypes";
+
+type SeatPlayer = Player | NetworkPlayer;
 
 type PlayerSeatProps = {
-  player?: Player;
+  player?: SeatPlayer;
   seatIndex: number;
   isSelected?: boolean;
   isLeader?: boolean;
+  isMe?: boolean;
   hasLady?: boolean;
   hasExcalibur?: boolean;
   isClickable?: boolean;
   privateInfoRevealed: boolean;
-  leaderBadgeRevealed: boolean;
   seatMeta?: SeatMetaInfo;
+  seatCircleTopLeftOverlay?: ReactNode;
+  seatCircleBottomRightOverlay?: ReactNode;
+  cardOverlay?: ReactNode;
   onClick?: () => void;
 };
 
@@ -20,12 +27,15 @@ export default function PlayerSeat({
   seatIndex,
   isSelected = false,
   isLeader = false,
+  isMe = false,
   isClickable = false,
   hasLady = false,
   hasExcalibur = false,
   privateInfoRevealed,
-  leaderBadgeRevealed,
   seatMeta,
+  seatCircleTopLeftOverlay,
+  seatCircleBottomRightOverlay,
+  cardOverlay,
   onClick,
 }: PlayerSeatProps) {
   function getSeatLabel() {
@@ -38,25 +48,42 @@ export default function PlayerSeat({
       className={`player-seat
         ${isSelected ? "selected" : ""}
         ${isLeader ? "leader" : ""}
+        ${isMe ? "me" : ""}
+        ${hasLady ? "has-lady" : ""}
         ${isClickable ? "clickable" : ""}
         ${!player ? "empty" : "occupied"}`}
       onClick={isClickable ? onClick : undefined}
     >
+      {cardOverlay ? <div className="player-seat-card-overlay">{cardOverlay}</div> : null}
+
       <div className="player-seat-circle">
+        {seatCircleTopLeftOverlay ? (
+          <div className="player-seat-circle-overlay player-seat-circle-overlay-top-left">
+            {seatCircleTopLeftOverlay}
+          </div>
+        ) : null}
+        {seatCircleBottomRightOverlay ? (
+          <div className="player-seat-circle-overlay player-seat-circle-overlay-bottom-right">
+            {seatCircleBottomRightOverlay}
+          </div>
+        ) : null}
         {getSeatLabel()}
       </div>
 
-       <div className="player-seat-main">
-        <div className="player-seat-name">
-          {player ? player.name : `Seat ${seatIndex + 1}`}
+      <div className="player-seat-main">
+        <div className="player-seat-name-row">
+          <div className="player-seat-name">
+            {player ? player.name : `Seat ${seatIndex + 1}`}
+          </div>
         </div>
 
         <div className="player-seat-identity-row">
           {seatMeta ? (
-            <span className={`seat-meta-badge ${seatMeta.tone} ${
-              privateInfoRevealed ? "revealed" : ""
-            }`}
-            
+            <span
+              key={`${seatMeta.tone}-${seatMeta.text}`}
+              className={`seat-meta-badge ${seatMeta.tone} ${
+                privateInfoRevealed ? "revealed" : ""
+              }`}
             >
               {seatMeta.text}
             </span>
@@ -67,9 +94,7 @@ export default function PlayerSeat({
       </div>
 
       <div className="player-seat-icons">
-        {isLeader && leaderBadgeRevealed && <span className="seat-icon" title="Leader">👑</span>}
-        {hasLady && <span className="seat-icon" title="Lady of the Lake">🪞</span>}
-        {hasExcalibur && <span className="seat-icon" title="Excalibur">🗡️</span>}
+        {hasExcalibur ? <span className="seat-icon" title="Excalibur">🗡️</span> : null}
       </div>
     </div>
   );

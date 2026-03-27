@@ -1,38 +1,28 @@
-export type Player = {
-  id: string;
-  name: string;
-  socketId: string;
-  isHost: boolean;
-};
+export type {
+  AddBotResponse,
+  ClientToServerEvents,
+  CreateRoomResponse,
+  EventVisibility,
+  FillSeatsWithBotsResponse,
+  GameActionResponse,
+  GamePhase,
+  GameEvent,
+  GamePlayerView as NetworkGamePlayer,
+  GameStateView,
+  JoinRoomResponse,
+  LeaveRoomResponse,
+  ProposalStage,
+  QuestAction,
+  QuestDetail,
+  Role,
+  RoleCardID,
+  RoomPlayerView as NetworkPlayer,
+  RoomStatus,
+  RoomView,
+  ServerToClientEvents,
+  StartGameResponse,
+  Team,
+  VoteChoice,
+} from "../../../shared/types/sharedTypes";
 
-export type Page =
-  | "home"
-  | "room"
-  | "game"
-  | "gameOver"
-
-export type Phase =
-  | "initializing"
-  | "discussion"
-  | "vote"
-  | "mission"
-  | "questResult"
-  | "gameOver";
-
-export type ProposalStage = "discussion" | "teamBuilding";
-
-
-export type Room = {
-  id: string;
-  players: Player[];
-  createdAt: number;
-  phase: Phase;
-};
-
-export type CreateRoomResponse =
-  | { ok: true; room: Room; playerId: string }
-  | { ok: false; message: string };
-
-export type JoinRoomResponse =
-  | { ok: true; room: Room; playerId: string }
-  | { ok: false; message: string };
+export type Page = "home" | "room" | "game" | "gameOver";

@@ -1,5 +1,5 @@
 import "./BoardCenterPanel.css";
-import type { Room, Player, QuestResult, Phase, GameEvent } from "../types/gameTypes";
+import type { Room, Phase } from "../types/gameTypes";
 import { getRequiredTeamSize } from "../engine/gameEngine";
 
 type QuestStatus = "future" | "current" | "success" | "fail";
@@ -13,6 +13,7 @@ type DisplayableEvent = {
 type BoardCenterPanelProps = {
   room: Room;
   myPlayerId: string;
+  leaderInfoRevealed: boolean;
   questStatuses: QuestStatus[];
   proposalStatuses: ProposalStatus[];
   events: DisplayableEvent[];
@@ -20,11 +21,14 @@ type BoardCenterPanelProps = {
   selectedTeamPlayerIds: string[];
   onStartBuildingTeam?: () => void;
   onConfirmTeam?: () => void;
+  onConfirmLadyTest?: () => void;
+  onConfirmAssassination?: () => void;
 };
 
 export default function BoardCenterPanel({
   room,
   myPlayerId,
+  leaderInfoRevealed,
   questStatuses,
   proposalStatuses,
   events,
@@ -32,20 +36,15 @@ export default function BoardCenterPanel({
   selectedTeamPlayerIds,
   onStartBuildingTeam,
   onConfirmTeam,
+  onConfirmLadyTest,
+  onConfirmAssassination,
 }: BoardCenterPanelProps) {
   const leader = room.players[room.leaderIndex];
-  const me = room.players.find((player) => player.id === myPlayerId);
   const isLeader = leader?.id === myPlayerId;
-  const visibleEvents = events
+  const lady = room.players.find((player) => player.id === room.ladyPlayerId);
+  const amILady = room.ladyPlayerId === myPlayerId;
+  const visibleEvents = events;
   const playerCount = room.players.length;
-
-  const selectedTeamPlayers = selectedTeamPlayerIds
-    .map((id) => room.players.find((player) => player.id === id))
-    .filter(Boolean) as Player[];
-
-  const questTrack: QuestResult[] = room.questDetails.map((result) =>
-    result.passed ? "success" : "fail"
-  );
 
   function getPhaseLabel(phase: Phase) {
     switch (phase) {
@@ -55,6 +54,10 @@ export default function BoardCenterPanel({
         return "Voting";
       case "mission":
         return "Mission";
+      case "lady":
+        return "Lady of the Lake";
+      case "assassinate":
+        return "Assassination";
       case "questResult":
         return "Quest Result";
       case "gameOver":
@@ -78,6 +81,16 @@ export default function BoardCenterPanel({
     }
 
     if (room.phase === "discussion") {
+      if (!leaderInfoRevealed) {
+        return (
+          <div className="board-action-section">
+            <div className="board-waiting-text">
+              Revealing leader and lake holder...
+            </div>
+          </div>
+        );
+      }
+
       if (isLeader) {
         if (room.proposalStage === "discussion") {
           return (
@@ -146,13 +159,80 @@ export default function BoardCenterPanel({
       );
     }
 
-    if (room.phase === "questResult") {
-      const latestResult = room.questDetails[room.questDetails.length - 1];
+    if (room.phase === "lady") {
+      if (room.ladyStage === "selecting") {
+        if (amILady) {
+          return (
+            <div className="board-action-section">
+              <div className="board-action-text">
+                Choose one player to test with the Lady of the Lake.
+              </div>
+
+              <button
+                className="board-confirm-button"
+                disabled={!room.ladyTargetPlayerId}
+                onClick={onConfirmLadyTest}
+              >
+                Confirm Target
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <div className="board-action-section">
+            <div className="board-waiting-text">
+              {lady?.name ?? "The Lady of the Lake"} is testing a player's loyalty...
+            </div>
+          </div>
+        );
+      }
 
       return (
         <div className="board-action-section">
-          <div className="board-result-text">
-            {latestResult?.passed ? "Quest succeeded" : "Quest failed"}
+          <div className="board-waiting-text">
+            Revealing loyalty test...
+          </div>
+        </div>
+      );
+    }
+
+    if (room.phase === "assassinate") {
+      const assassin = room.players.find((player) => player.id === room.assassinPlayerId);
+      const amIAssassin = room.assassinPlayerId === myPlayerId;
+
+      if (amIAssassin) {
+        return (
+          <div className="board-action-section">
+            <div className="board-action-text">
+              Choose one player to assassinate.
+            </div>
+
+            <button
+              className="board-confirm-button"
+              disabled={!room.assassinationTargetPlayerId}
+              onClick={onConfirmAssassination}
+            >
+              Confirm Assassination
+            </button>
+          </div>
+        );
+      }
+
+      return (
+        <div className="board-action-section">
+          <div className="board-waiting-text">
+            {assassin?.name ?? "The Assassin"} is choosing a target...
+          </div>
+        </div>
+      );
+    }
+
+    if (room.phase === "questResult") {
+      return (
+        <div className="board-action-section">
+          <div className="board-waiting-text">
+            Displaying quest results...
           </div>
         </div>
       );
