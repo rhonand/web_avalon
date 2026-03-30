@@ -11,6 +11,7 @@ export function createInitialRoom(): Room {
     proposalRound: 1,
     leaderIndex: 0,
     ladyPlayerId: "bot-5",
+    formerLadyPlayerIds: ["bot-5"],
     ladyTargetPlayerId: null,
     ladyResult: null,
     ladyKnowledge: {},

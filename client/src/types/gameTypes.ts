@@ -79,6 +79,7 @@ export type Room = {
   proposalRound: number;
   leaderIndex: number;
   ladyPlayerId: string | null;
+  formerLadyPlayerIds: string[];
   ladyTargetPlayerId: string | null;
   ladyResult: { id: number; text: string } | null;
   ladyKnowledge: Record<string, Team>;

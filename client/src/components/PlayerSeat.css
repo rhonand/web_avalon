@@ -159,9 +159,23 @@
   cursor: pointer;
 }
 
+.player-seat.disabled-target {
+  opacity: 0.48;
+  filter: saturate(0.75);
+}
+
+.player-seat.clickable.disabled-target {
+  cursor: not-allowed;
+}
+
 .player-seat.clickable:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.player-seat.clickable.disabled-target:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .player-seat.selected {

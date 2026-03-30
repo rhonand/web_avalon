@@ -17,6 +17,8 @@ type SeatColumnProps = {
   leaderBadgeRevealed: boolean;
   onSeatClick?: (playerId: string) => void;
   seatMetaResolver?: (playerId: string) => SeatMetaInfo;
+  disabledPlayerIds?: string[];
+  disabledReasonResolver?: (playerId: string) => string | undefined;
 };
 
 function LeaderCrownOverlay(): ReactNode {
@@ -66,6 +68,8 @@ export default function SeatColumn({
   leaderBadgeRevealed,
   onSeatClick,
   seatMetaResolver,
+  disabledPlayerIds = [],
+  disabledReasonResolver,
 }: SeatColumnProps) {
   function getPlayerAtSeat(
     seatIndex: number
@@ -82,9 +86,13 @@ export default function SeatColumn({
         const isLeader = player !== undefined && player.id === leaderPlayerId;
         const isMe = player !== undefined && player.id === myPlayerId;
         const hasLady = player !== undefined && player.id === ladyPlayerId;
+        const isDisabled =
+          player !== undefined && disabledPlayerIds.includes(player.id);
         const isClickable = player !== undefined && onSeatClick !== undefined;
         const seatMeta =
           player && seatMetaResolver ? seatMetaResolver(player.id) : null;
+        const disabledReason =
+          player && disabledReasonResolver ? disabledReasonResolver(player.id) : undefined;
         const seatCircleTopLeftOverlay =
           isLeader && leaderBadgeRevealed ? <LeaderCrownOverlay /> : null;
         const seatCircleBottomRightOverlay = isMe ? <SelfMarkerOverlay /> : null;
@@ -99,6 +107,8 @@ export default function SeatColumn({
             isMe={isMe}
             hasLady={hasLady}
             isClickable={isClickable}
+            isDisabled={isDisabled}
+            disabledReason={disabledReason}
             privateInfoRevealed={privateInfoRevealed}
             seatMeta={seatMeta}
             seatCircleTopLeftOverlay={seatCircleTopLeftOverlay}

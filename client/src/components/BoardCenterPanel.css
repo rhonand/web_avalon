@@ -171,6 +171,30 @@
   cursor: not-allowed;
 }
 
+.board-history-section {
+  margin-top: 12px;
+}
+
+.board-history-button,
+.board-history-return-button {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.board-history-button:hover,
+.board-history-return-button:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
 
 .track-section {
   display: flex;
@@ -396,4 +420,104 @@
 .action-button.secondary {
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+}
+
+.board-history-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 10, 18, 0.76);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+}
+
+.board-history-modal {
+  width: min(560px, calc(100vw - 32px));
+  height: min(520px, calc(100vh - 48px));
+  background: rgba(20, 24, 35, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.38);
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  box-sizing: border-box;
+}
+
+.board-history-modal-header {
+  margin-bottom: 16px;
+}
+
+.board-history-modal-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.board-history-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.board-history-card {
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.board-history-card-quest {
+  background: rgba(246, 214, 122, 0.08);
+  border-color: rgba(246, 214, 122, 0.18);
+}
+
+.board-history-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.board-history-card-line {
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.45;
+}
+
+.board-history-card-emphasis {
+  color: #f6d67a;
+  font-weight: 700;
+}
+
+.board-history-empty {
+  color: rgba(255, 255, 255, 0.64);
+  line-height: 1.45;
+}
+
+.board-history-return-button {
+  margin-top: 16px;
+}
+
+@keyframes event-log-item-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+    filter: blur(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
 }

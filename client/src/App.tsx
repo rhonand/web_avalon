@@ -198,7 +198,10 @@ function App() {
         prev.ladyStage === "selecting" &&
         prev.ladyPlayerId === myPlayerId
       ) {
-        if (playerId === myPlayerId) {
+        if (
+          playerId === myPlayerId ||
+          prev.formerLadyPlayerIds.includes(playerId)
+        ) {
           return prev;
         }
 

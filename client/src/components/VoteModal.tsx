@@ -2,7 +2,10 @@ import "./VoteModal.css";
 
 type VoteModalProps = {
   isOpen: boolean;
-  teamPlayerNames: string[];
+  teamPlayers: Array<{
+    label: string;
+    visualKind: "default" | "self" | "good" | "evil" | "merlin-maybe";
+  }>;
   myVote?: "approve" | "reject";
   onApprove: () => void;
   onReject: () => void;
@@ -10,14 +13,11 @@ type VoteModalProps = {
 
 export default function VoteModal({
   isOpen,
-  teamPlayerNames,
-  myVote,
+  teamPlayers,
   onApprove,
   onReject,
 }: VoteModalProps) {
   if (!isOpen) return null;
-
-  const hasVoted = myVote !== undefined;
 
   return (
     <div className="vote-modal-overlay">
@@ -32,29 +32,26 @@ export default function VoteModal({
           <div className="vote-modal-section-title">Proposed Team</div>
 
           <div className="vote-modal-team-list">
-            {teamPlayerNames.map((name) => (
-              <div className="vote-modal-player-chip" key={name}>
-                {name}
+            {teamPlayers.map((player) => (
+              <div
+                className={`vote-modal-player-chip vote-chip-${player.visualKind}`}
+                key={`${player.label}-${player.visualKind}`}
+              >
+                {player.label}
               </div>
             ))}
           </div>
         </div>
 
-        {!hasVoted ? (
-          <div className="vote-modal-actions">
-            <button className="vote-button approve" onClick={onApprove}>
-              Approve
-            </button>
+        <div className="vote-modal-actions">
+          <button className="vote-button approve" onClick={onApprove}>
+            Approve
+          </button>
 
-            <button className="vote-button reject" onClick={onReject}>
-              Reject
-            </button>
-          </div>
-        ) : (
-          <div className="vote-modal-waiting">
-            You voted <strong>{myVote}</strong>. Waiting for other players...
-          </div>
-        )}
+          <button className="vote-button reject" onClick={onReject}>
+            Reject
+          </button>
+        </div>
       </div>
     </div>
   );

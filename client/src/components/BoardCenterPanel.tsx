@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./BoardCenterPanel.css";
 import type { Room, Phase } from "../types/gameTypes";
 import { getRequiredTeamSize } from "../engine/gameEngine";
@@ -9,6 +10,26 @@ type DisplayableEvent = {
   id: number,
   text: string,
 }
+
+type ProposalHistoryCard = {
+  id: string;
+  kind: "proposal";
+  questRound: number;
+  proposalRound: number;
+  leaderSeat: string;
+  teamSeats: string;
+  approvedSeats: string;
+  rejectedSeats: string;
+  voteResult: string;
+};
+
+type QuestHistoryCard = {
+  id: string;
+  kind: "quest";
+  text: string;
+};
+
+type VotingHistoryCard = ProposalHistoryCard | QuestHistoryCard;
 
 type BoardCenterPanelProps = {
   room: Room;
@@ -39,12 +60,116 @@ export default function BoardCenterPanel({
   onConfirmLadyTest,
   onConfirmAssassination,
 }: BoardCenterPanelProps) {
+  const eventLogRef = useRef<HTMLDivElement | null>(null);
+  const latestEventIdRef = useRef<number | null>(null);
+  const [isVotingHistoryOpen, setIsVotingHistoryOpen] = useState(false);
   const leader = room.players[room.leaderIndex];
   const isLeader = leader?.id === myPlayerId;
   const lady = room.players.find((player) => player.id === room.ladyPlayerId);
   const amILady = room.ladyPlayerId === myPlayerId;
   const visibleEvents = events;
   const playerCount = room.players.length;
+  const votingHistoryCards = useMemo(() => {
+    let currentQuestRound = 1;
+    let currentProposalRound = 0;
+    const cards: VotingHistoryCard[] = [];
+
+    const getSortedSeatLabels = (playerIds: string[]) =>
+      playerIds
+        .map((playerId) => room.players.find((candidate) => candidate.id === playerId))
+        .filter((player): player is Room["players"][number] => Boolean(player))
+        .sort((left, right) => left.seatIndex - right.seatIndex)
+        .map((player) => String(player.seatIndex + 1));
+
+    for (const event of room.eventLog) {
+      if (event.type === "team_selected") {
+        currentProposalRound += 1;
+        cards.push({
+          id: `q${currentQuestRound}-p${currentProposalRound}`,
+          kind: "proposal",
+          questRound: currentQuestRound,
+          proposalRound: currentProposalRound,
+          leaderSeat: String(event.leaderIndex + 1),
+          teamSeats: getSortedSeatLabels(event.teamPlayerIds).join(", "),
+          approvedSeats: "",
+          rejectedSeats: "",
+          voteResult: "Vote pending",
+        });
+        continue;
+      }
+
+      if (event.type === "vote_resolved") {
+        const latestCard = cards[cards.length - 1];
+        if (latestCard?.kind === "proposal") {
+          latestCard.approvedSeats = getSortedSeatLabels(event.playerApproved).join(", ") || "None";
+          latestCard.rejectedSeats = getSortedSeatLabels(event.playerRejected).join(", ") || "None";
+          latestCard.voteResult = event.passed ? "Team Vote Passed" : "Team Vote Failed";
+        }
+        continue;
+      }
+
+      if (event.type === "quest_resolved") {
+        const resultLine =
+          event.failCardCount === 0
+            ? `Quest ${event.questRound} succeeded, team members: ${
+                room.questDetails
+                  .find((detail) => detail.questRound === event.questRound)
+                  ?.teamPlayerIds
+                  .map((playerId) => room.players.find((candidate) => candidate.id === playerId))
+                  .filter((player): player is Room["players"][number] => Boolean(player))
+                  .sort((left, right) => left.seatIndex - right.seatIndex)
+                  .map((player) => String(player.seatIndex + 1))
+                  .join(", ") ?? ""
+              }`
+            : `Quest ${event.questRound} failed with ${event.failCardCount} fail card${
+                event.failCardCount > 1 ? "s" : ""
+              }, team members: ${
+                room.questDetails
+                  .find((detail) => detail.questRound === event.questRound)
+                  ?.teamPlayerIds
+                  .map((playerId) => room.players.find((candidate) => candidate.id === playerId))
+                  .filter((player): player is Room["players"][number] => Boolean(player))
+                  .sort((left, right) => left.seatIndex - right.seatIndex)
+                  .map((player) => String(player.seatIndex + 1))
+                  .join(", ") ?? ""
+              }`;
+
+        cards.push({
+          id: `quest-${event.questRound}`,
+          kind: "quest",
+          text: resultLine,
+        });
+
+        currentQuestRound = event.questRound + 1;
+        currentProposalRound = 0;
+        continue;
+      }
+
+    }
+
+    return cards;
+  }, [room.eventLog, room.players]);
+
+  useEffect(() => {
+    const latestEventId =
+      visibleEvents.length > 0 ? visibleEvents[visibleEvents.length - 1].id : null;
+
+    if (latestEventId === null || latestEventId === latestEventIdRef.current) {
+      return;
+    }
+
+    latestEventIdRef.current = latestEventId;
+
+    const eventLogElement = eventLogRef.current;
+    if (!eventLogElement) {
+      return;
+    }
+
+    eventLogElement.scrollTo({
+      top: eventLogElement.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [visibleEvents]);
 
   function getPhaseLabel(phase: Phase) {
     switch (phase) {
@@ -280,12 +405,24 @@ export default function BoardCenterPanel({
       <div className="event-log-section">
         <div className="section-title">Event Log</div>
 
-        <div className="event-log-box">
+        <div
+          className="event-log-box"
+          ref={eventLogRef}
+          style={{ scrollBehavior: "smooth" }}
+        >
           {visibleEvents.length === 0 ? (
             <div className="event-log-placeholder"></div>
           ) : (
             visibleEvents.map((event) => (
-              <div key={event.id} className="event-log-item">
+              <div
+                key={event.id}
+                className="event-log-item"
+                style={{
+                  opacity: 0,
+                  transform: "translateX(-18px)",
+                  animation: "event-log-item-enter 360ms ease-out forwards",
+                }}
+              >
                 {event.text}
               </div>
             ))
@@ -294,7 +431,78 @@ export default function BoardCenterPanel({
       </div>
 
         {renderCenterAction()}
+
+        {room.phase !== "initializing" ? (
+          <div className="board-history-section">
+            <button
+              className="board-history-button"
+              onClick={() => setIsVotingHistoryOpen(true)}
+            >
+              View Voting History
+            </button>
+          </div>
+        ) : null}
       </div>
+
+      {isVotingHistoryOpen ? (
+        <div className="board-history-modal-overlay">
+          <div className="board-history-modal">
+            <div className="board-history-modal-header">
+              <div className="board-history-modal-title">Voting History</div>
+            </div>
+
+            <div className="board-history-modal-body">
+              {votingHistoryCards.length === 0 ? (
+                <div className="board-history-empty">No voting history yet.</div>
+              ) : (
+                votingHistoryCards.map((card) => (
+                  <div
+                    key={card.id}
+                    className={`board-history-card ${
+                      card.kind === "quest" ? "board-history-card-quest" : ""
+                    }`}
+                  >
+                    {card.kind === "proposal" ? (
+                      <>
+                        <div className="board-history-card-title">
+                          Quest {card.questRound} Proposal {card.proposalRound}
+                        </div>
+
+                        <div className="board-history-card-line">
+                          Leader <strong>{card.leaderSeat}</strong>
+                        </div>
+                        <div className="board-history-card-line">
+                          Team Members <strong>{card.teamSeats}</strong>
+                        </div>
+                        <div className="board-history-card-line">
+                          Approved <strong>{card.approvedSeats || "None"}</strong>
+                        </div>
+                        <div className="board-history-card-line">
+                          Rejected <strong>{card.rejectedSeats || "None"}</strong>
+                        </div>
+                        <div className="board-history-card-line board-history-card-emphasis">
+                          {card.voteResult}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="board-history-card-line board-history-card-emphasis">
+                        {card.text}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            <button
+              className="board-history-return-button"
+              onClick={() => setIsVotingHistoryOpen(false)}
+            >
+              Return
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -14,6 +14,8 @@ type PlayerSeatProps = {
   hasLady?: boolean;
   hasExcalibur?: boolean;
   isClickable?: boolean;
+  isDisabled?: boolean;
+  disabledReason?: string;
   privateInfoRevealed: boolean;
   seatMeta?: SeatMetaInfo;
   seatCircleTopLeftOverlay?: ReactNode;
@@ -31,6 +33,8 @@ export default function PlayerSeat({
   isClickable = false,
   hasLady = false,
   hasExcalibur = false,
+  isDisabled = false,
+  disabledReason,
   privateInfoRevealed,
   seatMeta,
   seatCircleTopLeftOverlay,
@@ -49,10 +53,12 @@ export default function PlayerSeat({
         ${isSelected ? "selected" : ""}
         ${isLeader ? "leader" : ""}
         ${isMe ? "me" : ""}
+        ${isDisabled ? "disabled-target" : ""}
         ${hasLady ? "has-lady" : ""}
         ${isClickable ? "clickable" : ""}
         ${!player ? "empty" : "occupied"}`}
-      onClick={isClickable ? onClick : undefined}
+      onClick={isClickable && !isDisabled ? onClick : undefined}
+      title={isDisabled ? disabledReason : undefined}
     >
       {cardOverlay ? <div className="player-seat-card-overlay">{cardOverlay}</div> : null}
 

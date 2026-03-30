@@ -42,6 +42,43 @@ export default function GameBoardPage({
   onSubmitMissionAction,
   onDismissQuestResult,
 }: GameBoardPageProps) {
+  function getChipVisualKind(player: Room["players"][number]) {
+    if (player.id === myPlayerId) {
+      return "self" as const;
+    }
+
+    if (!viewer) {
+      return "default" as const;
+    }
+
+    const seatMeta = getSeatMetaInfoForViewer(viewer, player, room);
+    if (!seatMeta) {
+      return "default" as const;
+    }
+
+    if (seatMeta.text === "Merlin?") {
+      return "merlin-maybe" as const;
+    }
+
+    if (seatMeta.tone === "evil") {
+      return "evil" as const;
+    }
+
+    if (seatMeta.tone === "good") {
+      return "good" as const;
+    }
+
+    return "default" as const;
+  }
+
+  function getSortedSeatLabels(playerIds: string[]): string[] {
+    return playerIds
+      .map((playerId) => room.players.find((player) => player.id === playerId))
+      .filter((player): player is Room["players"][number] => Boolean(player))
+      .sort((left, right) => left.seatIndex - right.seatIndex)
+      .map((player) => String(player.seatIndex + 1));
+  }
+
   const privateInfoTimerRef = useRef<number | null>(null);
   const leaderRevealTimerRef = useRef<number | null>(null);
   const ladyRevealTimerRef = useRef<number | null>(null);
@@ -84,10 +121,17 @@ export default function GameBoardPage({
   ];
   */
 
+  const viewer = room.players.find((player) => player.id === myPlayerId);
+
   const selectedTeamPlayerIds = room.selectedTeamPlayerIds;
-  const teamPlayerNames = selectedTeamPlayerIds
-    .map((id) => room.players.find((player) => player.id === id)?.name)
-    .filter(Boolean) as string[];
+  const teamPlayers = selectedTeamPlayerIds
+    .map((playerId) => room.players.find((player) => player.id === playerId))
+    .filter((player): player is Room["players"][number] => Boolean(player))
+    .sort((left, right) => left.seatIndex - right.seatIndex)
+    .map((player) => ({
+      label: String(player.seatIndex + 1),
+      visualKind: getChipVisualKind(player),
+    }));
 
 
   const amOnTeam = selectedTeamPlayerIds.includes(myPlayerId);
@@ -108,12 +152,16 @@ export default function GameBoardPage({
     (player) => player.id === inspectedPlayerId
   );
 
-  const viewer = room.players.find((player) => player.id === myPlayerId);
-
   const visibleInfo =
     viewer && inspectedPlayer
       ? getVisiblePlayerInfo(viewer, inspectedPlayer, room)
       : null;
+  const ladyBlockedPlayerIds =
+    room.phase === "lady" &&
+    room.ladyStage === "selecting" &&
+    room.ladyPlayerId === myPlayerId
+      ? room.formerLadyPlayerIds.filter((playerId) => playerId !== myPlayerId)
+      : [];
 
   const displayEvents = room.eventLog
     .filter((event) => {
@@ -316,12 +364,7 @@ export default function GameBoardPage({
       }
 
       case "team_selected": {
-        const teamSeats = event.teamPlayerIds
-          .map((playerId) => {
-            const index = room.players.findIndex((p) => p.id === playerId);
-            return index >= 0 ? index + 1 : "?";
-          })
-          .join(", ");
+        const teamSeats = getSortedSeatLabels(event.teamPlayerIds).join(", ");
 
         return `Player ${event.leaderIndex + 1} selected Players ${teamSeats} to form the team.`;
       }
@@ -374,6 +417,10 @@ export default function GameBoardPage({
           myPlayerId={myPlayerId}
           ladyPlayerId={ladyBadgeRevealed ? room.ladyPlayerId : null}
           selectedTeamPlayerIds={highlightedPlayerIds}
+          disabledPlayerIds={ladyBlockedPlayerIds}
+          disabledReasonResolver={() =>
+            "This player was Lady of the Lake and cannot be tested."
+          }
           leaderPlayerId={leaderPlayerId}
           onSeatClick={handleSeatInteraction}
           privateInfoRevealed={privateInfoRevealed}
@@ -402,6 +449,10 @@ export default function GameBoardPage({
           myPlayerId={myPlayerId}
           ladyPlayerId={ladyBadgeRevealed ? room.ladyPlayerId : null}
           selectedTeamPlayerIds={highlightedPlayerIds}
+          disabledPlayerIds={ladyBlockedPlayerIds}
+          disabledReasonResolver={() =>
+            "This player was Lady of the Lake and cannot be tested."
+          }
           leaderPlayerId={leaderPlayerId}
           onSeatClick={handleSeatInteraction}
           privateInfoRevealed={privateInfoRevealed}
@@ -411,19 +462,19 @@ export default function GameBoardPage({
       </div>
 
       <VoteModal
-        isOpen={room.phase === "vote"}
-        teamPlayerNames={teamPlayerNames}
+        isOpen={room.phase === "vote" && myVote === undefined}
+        teamPlayers={teamPlayers}
         myVote={myVote}
         onApprove={() => onSubmitVote("approve")}
         onReject={() => onSubmitVote("reject")}
       />
 
       <MissionModal
-        isOpen={room.phase === "mission"}
+        isOpen={room.phase === "mission" && amOnTeam && myMissionAction === undefined}
         amOnTeam={amOnTeam}
         myMissionAction={myMissionAction}
         canFail={!!canFail}
-        teamPlayerNames={teamPlayerNames}
+        teamPlayers={teamPlayers}
         onSuccess={() => onSubmitMissionAction("success")}
         onFail={() => onSubmitMissionAction("fail")}
       />
@@ -450,6 +501,7 @@ export default function GameBoardPage({
         isOpen={
           room.phase === "lady" &&
           room.ladyStage === "result" &&
+          room.ladyPlayerId === myPlayerId &&
           !!room.ladyResult &&
           dismissedLadyResultId !== room.ladyResult.id
         }

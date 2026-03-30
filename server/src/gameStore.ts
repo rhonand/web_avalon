@@ -320,7 +320,7 @@ function advanceAfterQuestResult(game: ServerGame): void {
     return;
   }
 
-  if ([1, 2, 3, 4].includes(game.questRound) && game.ladyPlayerId) {
+  if ([2, 3, 4].includes(game.questRound) && game.ladyPlayerId) {
     game.phase = "lady";
     game.ladyStage = "selecting";
     game.ladyTargetPlayerId = null;
@@ -332,24 +332,27 @@ function advanceAfterQuestResult(game: ServerGame): void {
 }
 
 function advanceAfterLadyResult(game: ServerGame): void {
-  const currentLadyPlayerId = game.ladyPlayerId;
-
   if (!game.ladyResult) {
     advanceToNextRound(game);
     return;
   }
 
-  game.ladyPlayerId = currentLadyPlayerId;
+  game.ladyPlayerId = game.ladyResult.targetPlayerId;
+  if (!game.formerLadyPlayerIds.includes(game.ladyResult.targetPlayerId)) {
+    game.formerLadyPlayerIds.push(game.ladyResult.targetPlayerId);
+  }
   game.ladyStage = null;
   game.ladyTargetPlayerId = null;
   game.ladyResult = null;
+  pushEvent(game, createLadyAssignedSelfEvent(game));
+  pushEvent(game, createLadyAssignedEvent(game));
   advanceToNextRound(game);
 }
 
 export function createGame(room: ServerRoom): ServerGame {
   const playerStates = buildPlayerStates(room);
   const leaderIndex = Math.floor(Math.random() * playerStates.length);
-  const ladyPlayerId = room.hostPlayerId;
+  const ladyPlayerId = getLadyPlayerId(playerStates, leaderIndex);
 
   const game: ServerGame = {
     id: crypto.randomUUID(),
@@ -362,6 +365,7 @@ export function createGame(room: ServerRoom): ServerGame {
     proposalRound: 1,
     leaderIndex,
     ladyPlayerId,
+    formerLadyPlayerIds: ladyPlayerId ? [ladyPlayerId] : [],
     ladyTargetPlayerId: null,
     ladyResult: null,
     ladyKnowledge: {},
@@ -482,6 +486,10 @@ export function submitLadyTest(
 
   if (targetPlayerId === playerId) {
     return { error: "You must choose another player." };
+  }
+
+  if (game.formerLadyPlayerIds.includes(targetPlayerId)) {
+    return { error: "This player was Lady of the Lake and cannot be tested." };
   }
 
   const target = getPlayerState(game, targetPlayerId);
@@ -827,8 +835,7 @@ export function getPendingBotAction(room: ServerRoom): (() => void) | null {
 
     if (pendingBot) {
       return () => {
-        const botState = getPlayerState(game, pendingBot.id);
-        const action: QuestAction = botState?.team === "evil" ? "fail" : "success";
+        const action: QuestAction = "success";
         void submitQuestAction(room.id, pendingBot.id, action);
       };
     }
@@ -840,7 +847,11 @@ export function getPendingBotAction(room: ServerRoom): (() => void) | null {
       return () => {
         const targetIds = shuffle(
           game.playerStates
-            .filter((player) => player.playerId !== game.ladyPlayerId)
+            .filter(
+              (player) =>
+                player.playerId !== game.ladyPlayerId &&
+                !game.formerLadyPlayerIds.includes(player.playerId)
+            )
             .map((player) => player.playerId)
         );
         const targetPlayerId = targetIds[0];

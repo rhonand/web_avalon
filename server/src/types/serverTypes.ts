@@ -60,6 +60,7 @@ export type ServerGame = {
   proposalRound: number;
   leaderIndex: number;
   ladyPlayerId: string | null;
+  formerLadyPlayerIds: string[];
   ladyTargetPlayerId: string | null;
   ladyResult: {
     id: number;
@@ -250,6 +251,7 @@ export function toGameView(
     proposalRound: game.proposalRound,
     leaderIndex: game.leaderIndex,
     ladyPlayerId: game.ladyPlayerId,
+    formerLadyPlayerIds: game.formerLadyPlayerIds,
     ladyTargetPlayerId: game.ladyTargetPlayerId,
     ladyResult,
     ladyKnowledge: viewerPlayerId ? game.ladyKnowledge[viewerPlayerId] ?? {} : {},
