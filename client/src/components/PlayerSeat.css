@@ -121,6 +121,11 @@
   left: -7px;
 }
 
+.player-seat-circle-overlay-top-right {
+  top: -7px;
+  right: -7px;
+}
+
 .player-seat-circle-overlay-bottom-right {
   right: -7px;
   bottom: -7px;
@@ -242,6 +247,10 @@
 .seat-circle-badge-self {
   background: #d8ad22;
   color: #ffffff;
+  border-radius: 0;
+  width: 18px;
+  height: 18px;
+  clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0 50%);
 }
 
 .seat-circle-self-text {
@@ -293,6 +302,33 @@
 .seat-icon {
   font-size: 14px;
   line-height: 1;
+}
+
+.player-mark-badge {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.3);
+}
+
+.player-mark-badge-good {
+  background: #2f9cff;
+}
+
+.player-mark-badge-evil {
+  background: #d84b4b;
+}
+
+.player-mark-glyph {
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffffff;
 }
 
 @keyframes lady-seat-pulse {

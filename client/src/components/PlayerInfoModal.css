@@ -11,7 +11,7 @@
 
 .player-info-modal {
   width: 100%;
-  max-width: 360px;
+  max-width: 420px;
   border-radius: 20px;
   background: rgba(18, 22, 32, 0.96);
   color: white;
@@ -22,15 +22,85 @@
 .player-info-modal-title {
   font-size: 24px;
   font-weight: 700;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .player-info-modal-body {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.86);
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
+.player-info-modal-body p {
+  margin: 0;
+}
+
+.player-info-modal-helper {
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.64);
+  margin-bottom: 16px;
+}
+
+.player-info-modal-mark-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.player-info-mark-option {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  min-height: 48px;
+  padding: 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+
+.player-info-mark-option:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.player-info-mark-option.selected {
+  border-color: rgba(255, 209, 102, 0.92);
+  background: rgba(255, 209, 102, 0.14);
+}
+
+.player-info-mark-preview {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.player-info-mark-preview-good {
+  background: #2f9cff;
+}
+
+.player-info-mark-preview-evil {
+  background: #d84b4b;
+}
+
+.player-info-mark-glyph {
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.player-info-modal-clear,
 .player-info-modal-close {
   width: 100%;
   border: none;
@@ -39,6 +109,21 @@
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.player-info-modal-clear {
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.player-info-modal-close {
   background: #ffd166;
   color: #222;
+}
+
+@media (max-width: 560px) {
+  .player-info-modal-mark-grid {
+    grid-template-columns: 1fr;
+  }
 }

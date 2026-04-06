@@ -19,6 +19,7 @@ type PlayerSeatProps = {
   privateInfoRevealed: boolean;
   seatMeta?: SeatMetaInfo;
   seatCircleTopLeftOverlay?: ReactNode;
+  seatCircleTopRightOverlay?: ReactNode;
   seatCircleBottomRightOverlay?: ReactNode;
   cardOverlay?: ReactNode;
   onClick?: () => void;
@@ -38,6 +39,7 @@ export default function PlayerSeat({
   privateInfoRevealed,
   seatMeta,
   seatCircleTopLeftOverlay,
+  seatCircleTopRightOverlay,
   seatCircleBottomRightOverlay,
   cardOverlay,
   onClick,
@@ -66,6 +68,11 @@ export default function PlayerSeat({
         {seatCircleTopLeftOverlay ? (
           <div className="player-seat-circle-overlay player-seat-circle-overlay-top-left">
             {seatCircleTopLeftOverlay}
+          </div>
+        ) : null}
+        {seatCircleTopRightOverlay ? (
+          <div className="player-seat-circle-overlay player-seat-circle-overlay-top-right">
+            {seatCircleTopRightOverlay}
           </div>
         ) : null}
         {seatCircleBottomRightOverlay ? (
@@ -100,7 +107,11 @@ export default function PlayerSeat({
       </div>
 
       <div className="player-seat-icons">
-        {hasExcalibur ? <span className="seat-icon" title="Excalibur">🗡️</span> : null}
+        {hasExcalibur ? (
+          <span className="seat-icon" title="Excalibur">
+            Sword
+          </span>
+        ) : null}
       </div>
     </div>
   );

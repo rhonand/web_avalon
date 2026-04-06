@@ -9,6 +9,13 @@ import LadyResultModal from "../components/LadyResultModal";
 import PlayerInfoModal from "../components/PlayerInfoModal";
 import { getVisiblePlayerInfo,getSeatMetaInfoForViewer } from "../engine/visibilityEngine";
 import type { Room, GameEvent } from "../types/gameTypes";
+import {
+  buildPlayerMarkLibrary,
+  getAvailablePlayerMarks,
+  getPlayerMarkDefinition,
+  getRoleDeckSummary,
+} from "../engine/playerMarkLibrary";
+import type { PlayerMarkAssignment } from "../types/playerMarks";
 
 
 type GameBoardPageProps = {
@@ -24,6 +31,9 @@ type GameBoardPageProps = {
   onSubmitVote: (vote: "approve" | "reject") => void;
   onSubmitMissionAction: (action: "success" | "fail") => void;
   onDismissQuestResult: () => void;
+  playerMarkAssignments: PlayerMarkAssignment;
+  onAssignPlayerMark: (playerId: string, markId: string) => void;
+  onClearPlayerMark: (playerId: string) => void;
 };
 
 
@@ -41,6 +51,9 @@ export default function GameBoardPage({
   onSubmitVote,
   onSubmitMissionAction,
   onDismissQuestResult,
+  playerMarkAssignments,
+  onAssignPlayerMark,
+  onClearPlayerMark,
 }: GameBoardPageProps) {
   function getChipVisualKind(player: Room["players"][number]) {
     if (player.id === myPlayerId) {
@@ -156,6 +169,14 @@ export default function GameBoardPage({
     viewer && inspectedPlayer
       ? getVisiblePlayerInfo(viewer, inspectedPlayer, room)
       : null;
+  const playerMarkLibrary = buildPlayerMarkLibrary(room.players.length);
+  const inspectedPlayerMark = inspectedPlayer
+    ? getPlayerMarkDefinition(playerMarkAssignments[inspectedPlayer.id], playerMarkLibrary)
+    : null;
+  const availableMarks = inspectedPlayer
+    ? getAvailablePlayerMarks(playerMarkLibrary, playerMarkAssignments, inspectedPlayer.id)
+    : [];
+  const roleSummary = getRoleDeckSummary(room.players.length);
   const ladyBlockedPlayerIds =
     room.phase === "lady" &&
     room.ladyStage === "selecting" &&
@@ -295,6 +316,10 @@ export default function GameBoardPage({
     return getSeatMetaInfoForViewer(viewer, target, room);
   }
 
+  function getPlayerMark(playerId: string) {
+    return getPlayerMarkDefinition(playerMarkAssignments[playerId], playerMarkLibrary);
+  }
+
   function handleSeatInteraction(playerId: string) {
     const leader = room.players[room.leaderIndex];
     const amILeader = leader?.id === myPlayerId;
@@ -426,6 +451,7 @@ export default function GameBoardPage({
           privateInfoRevealed={privateInfoRevealed}
           leaderBadgeRevealed={leaderBadgeRevealed}
           seatMetaResolver={getSeatMetaInfo}
+          playerMarkResolver={getPlayerMark}
         />
 
         <BoardCenterPanel
@@ -458,6 +484,7 @@ export default function GameBoardPage({
           privateInfoRevealed={privateInfoRevealed}
           leaderBadgeRevealed={leaderBadgeRevealed}
           seatMetaResolver={getSeatMetaInfo}
+          playerMarkResolver={getPlayerMark}
         />
       </div>
 
@@ -517,6 +544,23 @@ export default function GameBoardPage({
         isOpen={!!inspectedPlayer}
         player={inspectedPlayer}
         visibleInfo={visibleInfo}
+        currentMark={inspectedPlayerMark}
+        availableMarks={availableMarks}
+        roleSummary={roleSummary}
+        onSelectMark={(markId) => {
+          if (!inspectedPlayer) {
+            return;
+          }
+
+          onAssignPlayerMark(inspectedPlayer.id, markId);
+        }}
+        onClearMark={() => {
+          if (!inspectedPlayer) {
+            return;
+          }
+
+          onClearPlayerMark(inspectedPlayer.id);
+        }}
         onClose={() => setInspectedPlayerId(null)}
 />
     </div>

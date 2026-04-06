@@ -18,6 +18,27 @@ import HomePage from "./pages/HomePage";
 import GameRoomPage from "./pages/GameRoomPage";
 import GameBoardPage from "./pages/GameBoardPage";
 import GameOverPage from "./pages/GameOverPage";
+import { sanitizePlayerMarkAssignments } from "./engine/playerMarkLibrary";
+import type { PlayerMarkAssignment } from "./types/playerMarks";
+
+const PLAYER_MARK_STORAGE_KEY = "avalon-player-marks";
+
+function loadStoredPlayerMarks(): Record<string, PlayerMarkAssignment> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const raw = window.localStorage.getItem(PLAYER_MARK_STORAGE_KEY);
+    if (!raw) {
+      return {};
+    }
+
+    return JSON.parse(raw) as Record<string, PlayerMarkAssignment>;
+  } catch {
+    return {};
+  }
+}
 
 function App() {
   const [page, setPage] = useState<Page>("home");
@@ -27,6 +48,8 @@ function App() {
   const [game, setGame] = useState<GameStateView | null>(null);
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [playerMarksByGame, setPlayerMarksByGame] =
+    useState<Record<string, PlayerMarkAssignment>>(loadStoredPlayerMarks);
 
   useEffect(() => {
     socket.connect();
@@ -41,6 +64,19 @@ function App() {
 
     const onGameUpdated = (updatedGame: GameStateView) => {
       setGame(updatedGame);
+      setPlayerMarksByGame((current) => {
+        const currentAssignments = current[updatedGame.id] ?? {};
+        const nextAssignments = sanitizePlayerMarkAssignments(
+          currentAssignments,
+          updatedGame.players.map((player) => player.id),
+          updatedGame.players.length
+        );
+
+        return {
+          ...current,
+          [updatedGame.id]: nextAssignments,
+        };
+      });
     };
 
     const onGameDestroyed = ({ roomId }: { roomId: string }) => {
@@ -80,6 +116,13 @@ function App() {
 
     setPage("home");
   }, [game, room]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      PLAYER_MARK_STORAGE_KEY,
+      JSON.stringify(playerMarksByGame)
+    );
+  }, [playerMarksByGame]);
 
   const handleCreate = () => {
     setError("");
@@ -357,6 +400,36 @@ function App() {
     setError("");
   };
 
+  const handleAssignPlayerMark = (playerId: string, markId: string) => {
+    if (!game) {
+      return;
+    }
+
+    setPlayerMarksByGame((current) => ({
+      ...current,
+      [game.id]: {
+        ...(current[game.id] ?? {}),
+        [playerId]: markId,
+      },
+    }));
+  };
+
+  const handleClearPlayerMark = (playerId: string) => {
+    if (!game) {
+      return;
+    }
+
+    setPlayerMarksByGame((current) => {
+      const nextAssignments = { ...(current[game.id] ?? {}) };
+      delete nextAssignments[playerId];
+
+      return {
+        ...current,
+        [game.id]: nextAssignments,
+      };
+    });
+  };
+
   const handleReturnToRoom = () => {
     setError("");
     setGame(null);
@@ -387,6 +460,9 @@ function App() {
         onSubmitVote={handleSubmitVote}
         onSubmitMissionAction={handleSubmitMissionAction}
         onDismissQuestResult={handleDismissQuestResult}
+        playerMarkAssignments={playerMarksByGame[game.id] ?? {}}
+        onAssignPlayerMark={handleAssignPlayerMark}
+        onClearPlayerMark={handleClearPlayerMark}
       />
     );
   }

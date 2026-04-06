@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import PlayerSeat from "./PlayerSeat";
 import type { Player, Room, SeatMetaInfo } from "../types/gameTypes";
 import type { RoomView } from "../types/networkTypes";
+import type { PlayerMarkDefinition } from "../types/playerMarks";
 
 type SeatColumnRoom = Room | RoomView;
 
@@ -17,6 +18,7 @@ type SeatColumnProps = {
   leaderBadgeRevealed: boolean;
   onSeatClick?: (playerId: string) => void;
   seatMetaResolver?: (playerId: string) => SeatMetaInfo;
+  playerMarkResolver?: (playerId: string) => PlayerMarkDefinition | null;
   disabledPlayerIds?: string[];
   disabledReasonResolver?: (playerId: string) => string | undefined;
 };
@@ -57,6 +59,26 @@ function SelfMarkerOverlay(): ReactNode {
   );
 }
 
+function PlayerMarkOverlay({
+  label,
+  tone,
+  glyph,
+}: {
+  label: string;
+  tone: PlayerMarkDefinition["tone"];
+  glyph?: string;
+}): ReactNode {
+  return (
+    <span
+      className={`player-mark-badge player-mark-badge-${tone}`}
+      title={label}
+      aria-label={label}
+    >
+      {glyph ? <span className="player-mark-glyph">{glyph}</span> : null}
+    </span>
+  );
+}
+
 export default function SeatColumn({
   seatIndices,
   room,
@@ -68,6 +90,7 @@ export default function SeatColumn({
   leaderBadgeRevealed,
   onSeatClick,
   seatMetaResolver,
+  playerMarkResolver,
   disabledPlayerIds = [],
   disabledReasonResolver,
 }: SeatColumnProps) {
@@ -91,11 +114,20 @@ export default function SeatColumn({
         const isClickable = player !== undefined && onSeatClick !== undefined;
         const seatMeta =
           player && seatMetaResolver ? seatMetaResolver(player.id) : null;
+        const playerMark =
+          player && playerMarkResolver ? playerMarkResolver(player.id) : null;
         const disabledReason =
           player && disabledReasonResolver ? disabledReasonResolver(player.id) : undefined;
         const seatCircleTopLeftOverlay =
           isLeader && leaderBadgeRevealed ? <LeaderCrownOverlay /> : null;
-        const seatCircleBottomRightOverlay = isMe ? <SelfMarkerOverlay /> : null;
+        const seatCircleTopRightOverlay = isMe ? <SelfMarkerOverlay /> : null;
+        const seatCircleBottomRightOverlay = playerMark ? (
+          <PlayerMarkOverlay
+            label={playerMark.label}
+            tone={playerMark.tone}
+            glyph={playerMark.glyph}
+          />
+        ) : null;
 
         return (
           <PlayerSeat
@@ -112,6 +144,7 @@ export default function SeatColumn({
             privateInfoRevealed={privateInfoRevealed}
             seatMeta={seatMeta}
             seatCircleTopLeftOverlay={seatCircleTopLeftOverlay}
+            seatCircleTopRightOverlay={seatCircleTopRightOverlay}
             seatCircleBottomRightOverlay={seatCircleBottomRightOverlay}
             onClick={() => {
               if (player && onSeatClick) {
